@@ -7,6 +7,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "http.h"
 #include "resp.h"
 #include "util.h"
@@ -55,10 +56,12 @@ resp_dir(int fd, char *name, struct request *r)
 	if (dprintf(fd,
 	            "HTTP/1.1 %d %s\r\n"
 	            "Date: %s\r\n"
+				"Strict-Transport-Security: %s\r\n"
 	            "Connection: close\r\n"
 		    "Content-Type: text/html; charset=utf-8\r\n"
 		    "\r\n",
-	            S_OK, status_str[S_OK], timestamp(time(NULL), t)) < 0) {
+	            S_OK, status_str[S_OK], timestamp(time(NULL), t),
+				HSTS_POLICY) < 0) {
 		s = S_REQUEST_TIMEOUT;
 		goto cleanup;
 	}
@@ -139,11 +142,13 @@ resp_file(int fd, char *name, struct request *r, struct stat *st, char *mime,
 	if (dprintf(fd,
 	            "HTTP/1.1 %d %s\r\n"
 	            "Date: %s\r\n"
+				"Strict-Transport-Security: %s\r\n"
 	            "Connection: close\r\n"
 	            "Last-Modified: %s\r\n"
 	            "Content-Type: %s\r\n"
 	            "Content-Length: %zu\r\n",
 	            s, status_str[s], timestamp(time(NULL), t1),
+				HSTS_POLICY,
 	            timestamp(st->st_mtim.tv_sec, t2), mime,
 	            upper - lower + 1) < 0) {
 		s = S_REQUEST_TIMEOUT;

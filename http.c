@@ -56,6 +56,7 @@ http_send_status(int fd, enum status s)
 	if (dprintf(fd,
 	            "HTTP/1.1 %d %s\r\n"
 	            "Date: %s\r\n"
+				"Strict-Transport-Security: %s\r\n"
 	            "Connection: close\r\n"
 	            "%s"
 	            "Content-Type: text/html; charset=utf-8\r\n"
@@ -63,7 +64,7 @@ http_send_status(int fd, enum status s)
 	            "<!DOCTYPE html>\n<html>\n\t<head>\n"
 	            "\t\t<title>%d %s</title>\n\t</head>\n\t<body>\n"
 	            "\t\t<h1>%d %s</h1>\n\t</body>\n</html>\n",
-	            s, status_str[s], timestamp(time(NULL), t),
+	            s, status_str[s], timestamp(time(NULL), t), HSTS_POLICY,
 	            (s == S_METHOD_NOT_ALLOWED) ? "Allow: HEAD, GET\r\n" : "",
 	            s, status_str[s], s, status_str[s]) < 0) {
 		return S_REQUEST_TIMEOUT;
@@ -467,12 +468,14 @@ http_send_response(int fd, struct request *r)
 			if (dprintf(fd,
 			            "HTTP/1.1 %d %s\r\n"
 			            "Date: %s\r\n"
+				        "Strict-Transport-Security: %s\r\n"
 			            "Connection: close\r\n"
 			            "Location: //%s%s%s%s%s%s\r\n"
 			            "\r\n",
 			            S_MOVED_PERMANENTLY,
 			            status_str[S_MOVED_PERMANENTLY],
 				    timestamp(time(NULL), t),
+					HSTS_POLICY,
 			            ipv6host ? "[" : "",
 				    targethost,
 			            ipv6host ? "]" : "", hasport ? ":" : "",
@@ -484,12 +487,14 @@ http_send_response(int fd, struct request *r)
 			if (dprintf(fd,
 			            "HTTP/1.1 %d %s\r\n"
 			            "Date: %s\r\n"
+				        "Strict-Transport-Security: %s\r\n"
 			            "Connection: close\r\n"
 			            "Location: %s\r\n"
 			            "\r\n",
 			            S_MOVED_PERMANENTLY,
 			            status_str[S_MOVED_PERMANENTLY],
 				    timestamp(time(NULL), t),
+					HSTS_POLICY,
 				    tmptarget) < 0) {
 				return S_REQUEST_TIMEOUT;
 			}
@@ -535,10 +540,11 @@ http_send_response(int fd, struct request *r)
 			if (dprintf(fd,
 			            "HTTP/1.1 %d %s\r\n"
 			            "Date: %s\r\n"
+				        "Strict-Transport-Security: %s\r\n"
 			            "Connection: close\r\n"
 				    "\r\n",
 			            S_NOT_MODIFIED, status_str[S_NOT_MODIFIED],
-			            timestamp(time(NULL), t)) < 0) {
+			            timestamp(time(NULL), t), HSTS_POLICY) < 0) {
 				return S_REQUEST_TIMEOUT;
 			}
 		}
@@ -576,12 +582,14 @@ http_send_response(int fd, struct request *r)
 			if (dprintf(fd,
 			            "HTTP/1.1 %d %s\r\n"
 			            "Date: %s\r\n"
+				        "Strict-Transport-Security: %s\r\n"
 			            "Content-Range: bytes */%zu\r\n"
 			            "Connection: close\r\n"
 			            "\r\n",
 			            S_RANGE_NOT_SATISFIABLE,
 			            status_str[S_RANGE_NOT_SATISFIABLE],
 			            timestamp(time(NULL), t),
+						HSTS_POLICY,
 			            st.st_size) < 0) {
 				return S_REQUEST_TIMEOUT;
 			}

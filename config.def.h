@@ -1,6 +1,9 @@
 #define HEADER_MAX 4096
 #define FIELD_MAX  200
 
+/* consult https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security */
+#define HSTS_POLICY "max-age=31536000; includeSubDomains"
+
 /* mime-types */
 static const struct {
 	char *ext;
