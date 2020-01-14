@@ -22,6 +22,28 @@
 
 static char *udsname;
 
+/* sizeof(dst) = sizeof(src) * 2 - 1 */
+void log_escape(char *src, char *dst)
+{
+	char *s, *d;
+	for (s = src, d = dst; *s; s++) {
+		if (*s == '"') {
+			*d++ = '\\';
+			*d++ = '"';
+		} else if (*s == '\n') {
+			*d++ = '\\';
+			*d++ = 'n';
+		} else if (*s == '\\') {
+			*d++ = '\\';
+			*d++ = '\\';
+		} else {
+			*d++ = *s;
+		}
+	}
+
+	*d = '\0';
+}
+
 static void
 serve(int infd, struct sockaddr_storage *in_sa)
 {
@@ -30,6 +52,10 @@ serve(int infd, struct sockaddr_storage *in_sa)
 	enum status status;
 	char inaddr[INET6_ADDRSTRLEN /* > INET_ADDRSTRLEN */];
 	char tstmp[21];
+
+	char referer_escaped[FIELD_MAX*2-1], useragent_escaped[FIELD_MAX*2-1],
+		host_escaped[FIELD_MAX*2-1];
+	char target_escaped[PATH_MAX*2-1];
 
 	/* set connection timeout */
 	if (sock_set_timeout(infd, 30)) {
@@ -51,8 +77,15 @@ serve(int infd, struct sockaddr_storage *in_sa)
 	if (sock_get_inaddr_str(in_sa, inaddr, LEN(inaddr))) {
 		goto cleanup;
 	}
-	printf("%s\t%s\t%d\t%s\t%s\n", tstmp, inaddr, status,
-	       r.field[REQ_HOST], r.target);
+
+	log_escape(r.field[REQ_REFERER], referer_escaped);
+	log_escape(r.field[REQ_UA], useragent_escaped);
+	log_escape(r.field[REQ_HOST], host_escaped);
+	log_escape(r.target, target_escaped);
+
+	printf("%s\t%s\t%d\t\"%s\"\t\"%s\"\t\"%s\"\t\"%s\"\n", tstmp, inaddr, status,
+	       host_escaped, target_escaped, referer_escaped,
+		   useragent_escaped);
 cleanup:
 	/* clean up and finish */
 	shutdown(infd, SHUT_RD);

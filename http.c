@@ -25,6 +25,8 @@ const char *req_field_str[] = {
 	[REQ_HOST]    = "Host",
 	[REQ_RANGE]   = "Range",
 	[REQ_MOD]     = "If-Modified-Since",
+	[REQ_REFERER] = "Referer",
+	[REQ_UA]      = "User-Agent"
 };
 
 const char *req_method_str[] = {
