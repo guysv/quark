@@ -406,6 +406,24 @@ http_send_response(int fd, struct request *r)
 			              s.map[i].to, realtarget + len)) {
 				return http_send_status(fd, S_REQUEST_TOO_LARGE);
 			}
+			if (!strncmp(tmptarget, "http://", strlen("http://")) ||
+					!strncmp(tmptarget, "https://", strlen("https://"))) {
+				/* absolute reference to a possibly remote host,
+				 * just redirect */
+				if (dprintf(fd,
+			                "HTTP/1.1 %d %s\r\n"
+			                "Date: %s\r\n"
+			                "Connection: close\r\n"
+			                "Location: %s\r\n"
+			                "\r\n",
+			                S_MOVED_PERMANENTLY,
+			                status_str[S_MOVED_PERMANENTLY],
+				        timestamp(time(NULL), t),
+				        tmptarget) < 0) {
+				    return S_REQUEST_TIMEOUT;
+				}
+				return S_MOVED_PERMANENTLY;
+			}
 			memcpy(realtarget, tmptarget, sizeof(realtarget));
 			break;
 		}
