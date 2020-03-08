@@ -111,7 +111,7 @@ cleanup:
 
 enum status
 resp_file(int fd, char *name, struct request *r, struct stat *st, char *mime,
-          off_t lower, off_t upper)
+          char *encoding, off_t lower, off_t upper)
 {
 	FILE *fp;
 	enum status s;
@@ -142,10 +142,11 @@ resp_file(int fd, char *name, struct request *r, struct stat *st, char *mime,
 	            "Connection: close\r\n"
 	            "Last-Modified: %s\r\n"
 	            "Content-Type: %s\r\n"
+				"%s"
 	            "Content-Length: %zu\r\n",
 	            s, status_str[s], timestamp(time(NULL), t1),
 	            timestamp(st->st_mtim.tv_sec, t2), mime,
-	            upper - lower + 1) < 0) {
+	            encoding, upper - lower + 1) < 0) {
 		s = S_REQUEST_TIMEOUT;
 		goto cleanup;
 	}

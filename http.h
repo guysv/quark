@@ -11,6 +11,7 @@ enum req_field {
 	REQ_HOST,
 	REQ_RANGE,
 	REQ_MOD,
+	REQ_ENCODE,
 	NUM_REQ_FIELDS,
 };
 

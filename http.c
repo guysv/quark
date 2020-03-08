@@ -25,6 +25,7 @@ const char *req_field_str[] = {
 	[REQ_HOST]    = "Host",
 	[REQ_RANGE]   = "Range",
 	[REQ_MOD]     = "If-Modified-Since",
+	[REQ_ENCODE]  = "Accept-Encoding",
 };
 
 const char *req_method_str[] = {
@@ -349,7 +350,7 @@ enum status
 http_send_response(int fd, struct request *r)
 {
 	struct in6_addr res;
-	struct stat st;
+	struct stat st, gzst;
 	struct tm tm;
 	size_t len, i;
 	off_t lower, upper;
@@ -604,5 +605,24 @@ http_send_response(int fd, struct request *r)
 		}
 	}
 
-	return resp_file(fd, RELPATH(realtarget), r, &st, mime, lower, upper);
+	/* encoding-compression */
+	if (r->field[REQ_ENCODE][0] && !r->field[REQ_RANGE][0]) {
+		for (p = r->field[REQ_ENCODE]; p; p = strchr(p, ','), p ? p++ : p) {
+			/* skip whitespace */
+			for (; *p == ' ' || *p == '\t'; p++)
+			;
+			if (!strncasecmp(p, "gzip", sizeof("gzip")-1) &&
+					!esnprintf(tmptarget, sizeof(tmptarget), "%s%s", realtarget,
+							".gz") &&
+					!stat(RELPATH(tmptarget), &gzst) &&
+					S_ISREG(gzst.st_mode)) {
+				lower = 0;
+				upper = gzst.st_size-1;
+				return resp_file(fd, RELPATH(tmptarget), r, &gzst, mime,
+								"Content-Encoding: gzip\r\n", lower, upper);
+			}
+		}
+	}
+
+	return resp_file(fd, RELPATH(realtarget), r, &st, mime, "", lower, upper);
 }
