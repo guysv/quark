@@ -1,5 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 #include <dirent.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,12 +39,29 @@ suffix(int t)
 	return "";
 }
 
+void
+htmlescape(char *src, char *dst)
+{
+	for (; *src; src++) {
+		switch (*src) {
+		case '<': strcpy(dst, "&lt;"); dst += sizeof("&lt;")-1; break;
+		case '>': strcpy(dst, "&gt;"); dst += sizeof("&gt;")-1; break;
+		case '&': strcpy(dst, "&amp;"); dst += sizeof("&amp;")-1; break;
+		case '"': strcpy(dst, "&quot;"); dst += sizeof("&quot;")-1; break;
+		case '\'': strcpy(dst, "&#39;"); dst += sizeof("&#39;")-1; break;
+		default: *dst++ = *src; *dst = '\0'; break;
+		}
+	}
+}
+
 enum status
 resp_dir(int fd, char *name, struct request *r)
 {
 	struct dirent **e;
 	size_t i;
 	int dirlen, s;
+	/* 6 - strlen("&quot;"), largest escape */
+	char escapebuf[PATH_MAX*6];
 	static char t[TIMESTAMP_LEN];
 
 	/* read directory */
@@ -64,12 +82,13 @@ resp_dir(int fd, char *name, struct request *r)
 	}
 
 	if (r->method == M_GET) {
+		htmlescape(name, escapebuf);
 		/* listing header */
 		if (dprintf(fd,
 		            "<!DOCTYPE html>\n<html>\n\t<head>"
 		            "<title>Index of %s</title></head>\n"
 		            "\t<body>\n\t\t<a href=\"..\">..</a>",
-		            name) < 0) {
+		            escapebuf) < 0) {
 			s = S_REQUEST_TIMEOUT;
 			goto cleanup;
 		}
@@ -81,11 +100,12 @@ resp_dir(int fd, char *name, struct request *r)
 				continue;
 			}
 
+			htmlescape(e[i]->d_name, escapebuf);
 			/* entry line */
 			if (dprintf(fd, "<br />\n\t\t<a href=\"%s%s\">%s%s</a>",
-			            e[i]->d_name,
+			            escapebuf,
 			            (e[i]->d_type == DT_DIR) ? "/" : "",
-			            e[i]->d_name,
+			            escapebuf,
 			            suffix(e[i]->d_type)) < 0) {
 				s = S_REQUEST_TIMEOUT;
 				goto cleanup;
